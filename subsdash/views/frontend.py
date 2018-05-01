@@ -11,7 +11,8 @@ SUBS = {
         "prod_id": "20083526001_KG",
         "prod_name": "ROYAL GALA APPLES",
         "size": "1",
-        "uom": "ea"
+        "uom": "ea",
+        "brand": "no brand"
     },
     "pc_subs": [
         {
@@ -19,14 +20,16 @@ SUBS = {
             "prod_name": "MCINTOSH APPLES",
             "size": "1",
             "uom": "ea",
-            "pid": 2
+            "pid": 2,
+            "brand": "no name"
         },
         {
             "prod_id": "20061287001_KG",
             "prod_name": "JAZZ APPLES",
             "size": "1",
             "uom": "ea",
-            "pid": 3
+            "pid": 3,
+            "brand": "no name"
         }
     ]
 }

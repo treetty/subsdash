@@ -1,0 +1,15 @@
+img.logo {
+    display: inline-block;
+    margin: 0 auto;
+    height: 20px;
+}
+
+.col-centered {
+    float: none;
+    margin: 0 auto;
+}
+
+
+body {
+    padding-top: 5rem;
+}
