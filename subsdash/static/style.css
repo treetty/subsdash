@@ -1,4 +1,29 @@
-.col-centered{
+.wrapper-logo {
+    max-width: 150px;
+    height: 20px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+    -moz-transform: translate(-50%, -50%);
+    -ms-transform: translate(-50%, -50%);
+    -o-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+    margin: 0 auto;
+    text-align: center;
+}
+
+.wrapper-logo a {
+    display: inline-block;
+}
+
+.wrapper-logo img {
+    display: inline-block;
+    margin: 0 auto;
+    height: 20px;
+}
+
+.col-centered {
     float: none;
     margin: 0 auto;
 }
