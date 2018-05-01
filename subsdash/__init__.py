@@ -1,7 +1,7 @@
 from flask import Flask
 
 from subsdash import views
-
+from subsdash.extensions import db
 
 DEFAULT_APP_NAME = 'subsdash'
 
@@ -17,13 +17,15 @@ def create_app(config=None, modules=None):
 
     app = Flask(DEFAULT_APP_NAME)
 
-    # config
     app.config.from_pyfile(config)
-
-    # register module
+    configure_extensions(app)
     configure_modules(app, modules)
 
     return app
+
+
+def configure_extensions(app):
+    db.init_app(app)
 
 
 def configure_modules(app, modules):
