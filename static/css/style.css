@@ -4,14 +4,12 @@ img.logo {
     height: 20px;
 }
 
-.col-centered {
-    float: none;
-    margin: 0 auto;
-}
-
-
 body {
     padding-top: 5rem;
+}
+
+main {
+    min-height: 70vh;
 }
 
 footer {
