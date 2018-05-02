@@ -1,7 +1,6 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask import request, redirect, url_for, render_template
-from flask_mail import Mail
 from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMixin, login_required
 
 
@@ -9,7 +8,6 @@ app = Flask(__name__)
 app.config.from_pyfile('config.cfg')
 
 db = SQLAlchemy(app)
-mail = Mail(app)
 
 
 # Define models
@@ -88,19 +86,19 @@ SUBS = {
 # Routers
 @app.route("/")
 def index():
-	return render_template('index.html')
+    return render_template('index.html')
 
 
-@app.route("/feedback/<int:page>/")
+@app.route("/feedback/<int:pid>")
 @login_required
-def feedback(page=1):
-    if page < 1:
-        page = 1
+def feedback(pid=1):
+    if pid < 1:
+        pid = 1
 
-    return render_template("feedback.html", page=page, subs=SUBS)
+    return render_template("feedback.html", page=pid, subs=SUBS)
 
 
-@app.route("/post_answer", methods=['POST'])
+@app.route("/post_answer/<int:pid>", methods=['POST'])
 def post_answer():
     pid = 0
     answer_map = request.form.copy()
