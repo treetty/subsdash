@@ -38,15 +38,38 @@ class User(db.Model, UserMixin):
                             backref=db.backref('users', lazy='dynamic'))
 
 # Subs
+class Mapping(db.Model):
+	__tablename__ = 'mapping'
+	id = db.Column(db.Integer, primary_key=True)
+	orig_id = db.Column(db.Integer(), db.ForeignKey('product.id'))
+	pc_id = db.Column(db.Integer(), db.ForeignKey('product.id'))
+
+	def __init__(self, orig_id, pc_id):
+		self.orig_id = orig_id
+		self.pc_id = pc_id
+
+
+class Product(db.Model):
+	__tablename__ = 'product'
+	id = db.Column(db.Integer, primary_key=True)
+	prod_id = db.Column(db.String(80), unique=True)
+	prod_name = db.Column(db.String(255))
+	prod_size = db.Column(db.Integer(), nullable=True)
+	prod_uom = db.Column(db.String(40), nullable=True)
+	prod_brand = db.Column(db.String(120), nullable=True)
+
+
 class Answer(db.Model):
     __tablename__ = 'answer'
     id = db.Column(db.Integer, primary_key=True)
     pid = db.Column(db.Integer)
     answer = db.Column(db.String(4), nullable=True)
+    user_email = db.Column(db.String(255), db.ForeignKey('user.email')) 
 
-    def __init__(self, pid, answer):
+    def __init__(self, pid, answer, user_email):
         self.pid = pid
         self.answer = answer
+        self.user_email = user_email
 
 
 # Setup Flask-Security
@@ -89,24 +112,25 @@ def index():
     return render_template('index.html')
 
 
-@app.route("/feedback/<int:pid>")
+@app.route("/feedback/<int:page>")
 @login_required
-def feedback(pid=1):
-    if pid < 1:
-        pid = 1
+def feedback(page=1):
+    if page < 1:
+        page = 1
 
-    return render_template("feedback.html", page=pid, subs=SUBS)
+    return render_template("feedback.html", page=page, subs=SUBS)
 
 
-@app.route("/post_answer/<int:pid>", methods=['POST'])
-def post_answer():
-    pid = 0
+@app.route("/post_answer/<int:page>/<uid>", methods=['POST'])
+def post_answer(page, uid):
     answer_map = request.form.copy()
     for pid, ans in answer_map.iteritems():
-        answer = Answer(pid, ans)
+        answer = Answer(pid, ans, uid)
         db.session.add(answer)
         db.session.commit()
-    return redirect(url_for(index))
+    page_next = page+1
+    return redirect(url_for('feedback', page=page_next))
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8090)

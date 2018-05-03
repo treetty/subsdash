@@ -43,8 +43,9 @@
     </header>
     <main role="main" class="container">
         {%- if current_user.is_authenticated -%}
-        <p>Hello {{ current_user.email }}</p>
-        {%- endif %} {% block content %} {% endblock %}
+        <p>Hello, {{ current_user.email }}!</p>
+        {%- endif %}
+        {% block content %} {% endblock %}
     </main>
     <footer class="bg-dark text-muted">
         <div class="container">

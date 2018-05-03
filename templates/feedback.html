@@ -1,4 +1,6 @@
-{% extends "layout.html" %} {% block content %}
+{% extends "layout.html" %}
+{% block title %} Feedback {% endblock %}
+{% block content %}
 <!-- copied and modified from https://github.com/twbs/bootstrap/blob/v4-dev/docs/4.1/examples/blog/index.html -->
 <div class="jumbotron p-3 p-md-5 text-dark rounded">
     <div class="row">
@@ -11,7 +13,7 @@
         <div class="col-md-6 px-0" style="background:url('http://via.placeholder.com/150x150') no-repeat center; background-size:contain"></div>
     </div>
 </div>
-<form method="post" action="/post_answer">
+<form method="post" action="/post_answer/{{ page }}/{{ current_user.email }}">
     <div class="row mb-2">
         {%- for pc_sub in subs.pc_subs %}
         <div class="col-md-6">
