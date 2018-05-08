@@ -18,14 +18,12 @@ roles_users = db.Table('roles_users',
 
 
 class Role(db.Model, RoleMixin):
-    __tablename__ = 'role'
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(80), unique=True)
     description = db.Column(db.String(255))
 
 
 class User(db.Model, UserMixin):
-    __tablename__ = 'user'
     id = db.Column(db.Integer(), primary_key=True)
     email = db.Column(db.String(255), unique=True)
     password = db.Column(db.String(255))
@@ -35,7 +33,6 @@ class User(db.Model, UserMixin):
 
 
 class Active(db.Model):
-    __tablename__ = 'active'
     user_email = db.Column(db.String(255), db.ForeignKey(
         'user.email'), primary_key=True)
     active_page = db.Column(db.Integer())
@@ -46,7 +43,6 @@ class Active(db.Model):
 
 
 class Mapping(db.Model):
-    __tablename__ = 'mapping'
     id = db.Column(db.Integer, primary_key=True)
     page = db.Column(db.Integer)
     orig_id = db.Column(db.String(80), db.ForeignKey('product.id'))
@@ -59,10 +55,9 @@ class Mapping(db.Model):
 
 
 class Product(db.Model):
-    __tablename__ = 'product'
     id = db.Column(db.String(80), unique=True, primary_key=True)
     name = db.Column(db.String(255))
-    size = db.Column(db.Integer(), nullable=True)
+    size = db.Column(db.Float(), nullable=True)
     uom = db.Column(db.String(40), nullable=True)
     brand = db.Column(db.String(120), nullable=True)
 
@@ -75,7 +70,6 @@ class Product(db.Model):
 
 
 class Answer(db.Model):
-    __tablename__ = 'answer'
     id = db.Column(db.Integer, primary_key=True)
     pid = db.Column(db.Integer)
     answer = db.Column(db.String(4), nullable=True)
@@ -141,7 +135,41 @@ def feedback(page=1):
     if page < 1:
         page = 1
 
-    return render_template("feedback.html", page=page, subs=SUBS)
+    subs = Mapping.query.filter_by(page=page).all()
+    if not subs:
+        return redirect(url_for('index'))
+
+    prod_ids = []
+    for sub in subs:
+    	prod_ids.append(sub.pc_id)
+    prod_ids.append(subs[0].orig_id)
+
+    prod_attrs = Product.query.filter(Product.id.in_(prod_ids)).all()
+
+    data = {"orig":{}, "pc_subs":[]}
+
+    orig_attr = prod_attrs[-1]
+    data["orig"] = {
+        "prod_id": orig_attr.id,
+        "prod_name": orig_attr.name,
+        "size": orig_attr.size,
+        "uom": orig_attr.uom,
+        "brand": orig_attr.brand
+    }
+
+    for i in range(len(subs)):
+    	prod_attr = prod_attrs[i]
+    	attr = {
+    		"prod_id": prod_attr.id,
+            "prod_name": prod_attr.name,
+            "size": prod_attr.size,
+            "uom": prod_attr.uom,
+            "brand": prod_attr.brand,
+            "pid": subs[i].id
+    	}
+    	data["pc_subs"].append(attr)
+
+    return render_template("feedback.html", page=page, subs=data)
 
 
 @app.route("/post_answer/<int:page>/<email>", methods=['POST'])
