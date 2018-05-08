@@ -1,7 +1,6 @@
-from flask import Flask
+from flask import Flask, request, redirect, url_for, render_template
 from flask_sqlalchemy import SQLAlchemy
-from flask import request, redirect, url_for, render_template
-from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMixin, login_required
+from flask_security import Security, SQLAlchemyUserDatastore, RoleMixin, UserMixin, login_required, current_user
 
 
 app = Flask(__name__)
@@ -12,12 +11,10 @@ db = SQLAlchemy(app)
 
 # Define models
 
-# Users
-class RolesUsers(db.Model):
-    __tablename__ = 'roles_users'
-    id = db.Column(db.Integer(), primary_key=True)
-    user_id = db.Column(db.Integer(), db.ForeignKey('user.id'))
-    role_id = db.Column(db.Integer(), db.ForeignKey('role.id'))
+roles_users = db.Table('roles_users',
+                       db.Column('user_id', db.Integer(),
+                                 db.ForeignKey('user.id')),
+                       db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
 
 
 class Role(db.Model, RoleMixin):
@@ -29,34 +26,52 @@ class Role(db.Model, RoleMixin):
 
 class User(db.Model, UserMixin):
     __tablename__ = 'user'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer(), primary_key=True)
     email = db.Column(db.String(255), unique=True)
     password = db.Column(db.String(255))
     active = db.Column(db.Boolean())
-    confirmed_at = db.Column(db.DateTime())
-    roles = db.relationship('Role', secondary='roles_users',
+    roles = db.relationship('Role', secondary=roles_users,
                             backref=db.backref('users', lazy='dynamic'))
 
-# Subs
-class Mapping(db.Model):
-	__tablename__ = 'mapping'
-	id = db.Column(db.Integer, primary_key=True)
-	orig_id = db.Column(db.Integer(), db.ForeignKey('product.id'))
-	pc_id = db.Column(db.Integer(), db.ForeignKey('product.id'))
 
-	def __init__(self, orig_id, pc_id):
-		self.orig_id = orig_id
-		self.pc_id = pc_id
+class Active(db.Model):
+    __tablename__ = 'active'
+    user_email = db.Column(db.String(255), db.ForeignKey(
+        'user.email'), primary_key=True)
+    active_page = db.Column(db.Integer())
+
+    def __init__(self, email, page):
+        self.user_email = email
+        self.active_page = page
+
+
+class Mapping(db.Model):
+    __tablename__ = 'mapping'
+    id = db.Column(db.Integer, primary_key=True)
+    page = db.Column(db.Integer)
+    orig_id = db.Column(db.String(80), db.ForeignKey('product.id'))
+    pc_id = db.Column(db.String(80), db.ForeignKey('product.id'))
+
+    def __init__(self, page, orig_id, pc_id):
+        self.page = page
+        self.orig_id = orig_id
+        self.pc_id = pc_id
 
 
 class Product(db.Model):
-	__tablename__ = 'product'
-	id = db.Column(db.Integer, primary_key=True)
-	prod_id = db.Column(db.String(80), unique=True)
-	prod_name = db.Column(db.String(255))
-	prod_size = db.Column(db.Integer(), nullable=True)
-	prod_uom = db.Column(db.String(40), nullable=True)
-	prod_brand = db.Column(db.String(120), nullable=True)
+    __tablename__ = 'product'
+    id = db.Column(db.String(80), unique=True, primary_key=True)
+    name = db.Column(db.String(255))
+    size = db.Column(db.Integer(), nullable=True)
+    uom = db.Column(db.String(40), nullable=True)
+    brand = db.Column(db.String(120), nullable=True)
+
+    def __init__(self, id, name, size, uom, brand):
+        self.id = id
+        self.name = name
+        self.size = size
+        self.uom = uom
+        self.brand = brand
 
 
 class Answer(db.Model):
@@ -64,7 +79,7 @@ class Answer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     pid = db.Column(db.Integer)
     answer = db.Column(db.String(4), nullable=True)
-    user_email = db.Column(db.String(255), db.ForeignKey('user.email')) 
+    user_email = db.Column(db.String(255), db.ForeignKey('user.email'))
 
     def __init__(self, pid, answer, user_email):
         self.pid = pid
@@ -112,6 +127,14 @@ def index():
     return render_template('index.html')
 
 
+@app.route("/last_visit")
+@login_required
+def last_visit():
+    last_pages = Active.query.filter_by(user_email=current_user.email)
+    last_page = last_pages[-1].active_page
+    return redirect(url_for('feedback', page=last_page))
+
+
 @app.route("/feedback/<int:page>")
 @login_required
 def feedback(page=1):
@@ -121,15 +144,18 @@ def feedback(page=1):
     return render_template("feedback.html", page=page, subs=SUBS)
 
 
-@app.route("/post_answer/<int:page>/<uid>", methods=['POST'])
-def post_answer(page, uid):
+@app.route("/post_answer/<int:page>/<email>", methods=['POST'])
+def post_answer(page, email):
     answer_map = request.form.copy()
     for pid, ans in answer_map.iteritems():
-        answer = Answer(pid, ans, uid)
+        answer = Answer(pid, ans, email)
         db.session.add(answer)
         db.session.commit()
-    page_next = page+1
-    return redirect(url_for('feedback', page=page_next))
+    next_page = page + 1
+    user_active = Active(email, next_page)
+    db.session.add(user_active)
+    db.session.commit()
+    return redirect(url_for('feedback', page=next_page))
 
 
 if __name__ == '__main__':
