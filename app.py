@@ -12,8 +12,7 @@ db = SQLAlchemy(app)
 # Define models
 
 roles_users = db.Table('roles_users',
-                       db.Column('user_id', db.Integer(),
-                                 db.ForeignKey('user.id')),
+                       db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
                        db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
 
 
@@ -85,35 +84,6 @@ class Answer(db.Model):
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 security = Security(app, user_datastore)
 
-# Sample Data
-SUBS = {
-    "orig": {
-        "prod_id": "20083526001_KG",
-        "prod_name": "ROYAL GALA APPLES",
-        "size": "1",
-        "uom": "ea",
-        "brand": "no brand"
-    },
-    "pc_subs": [
-        {
-            "prod_id": "20039956001_KG",
-            "prod_name": "MCINTOSH APPLES",
-            "size": "1",
-            "uom": "ea",
-            "pid": 2,
-            "brand": "no name"
-        },
-        {
-            "prod_id": "20061287001_KG",
-            "prod_name": "JAZZ APPLES",
-            "size": "1",
-            "uom": "ea",
-            "pid": 3,
-            "brand": "no name"
-        }
-    ]
-}
-
 
 # Routers
 @app.route("/")
@@ -139,16 +109,9 @@ def feedback(page=1):
     if not subs:
         return redirect(url_for('index'))
 
-    prod_ids = []
-    for sub in subs:
-    	prod_ids.append(sub.pc_id)
-    prod_ids.append(subs[0].orig_id)
+    data = {"orig": {}, "pc_subs": []}
 
-    prod_attrs = Product.query.filter(Product.id.in_(prod_ids)).all()
-
-    data = {"orig":{}, "pc_subs":[]}
-
-    orig_attr = prod_attrs[-1]
+    orig_attr = Product.query.filter_by(id=subs[0].orig_id).all()[0]
     data["orig"] = {
         "prod_id": orig_attr.id,
         "prod_name": orig_attr.name,
@@ -157,17 +120,23 @@ def feedback(page=1):
         "brand": orig_attr.brand
     }
 
-    for i in range(len(subs)):
-    	prod_attr = prod_attrs[i]
-    	attr = {
-    		"prod_id": prod_attr.id,
+    pid_dict = {}
+    prod_ids = []
+    for sub in subs:
+        prod_ids.append(sub.pc_id)
+        pid_dict[sub.pc_id] = sub.id
+    prod_attrs = Product.query.filter(Product.id.in_(prod_ids)).all()
+
+    for prod_attr in prod_attrs:
+        attr = {
+            "prod_id": prod_attr.id,
             "prod_name": prod_attr.name,
             "size": prod_attr.size,
             "uom": prod_attr.uom,
             "brand": prod_attr.brand,
-            "pid": subs[i].id
-    	}
-    	data["pc_subs"].append(attr)
+            "pid": pid_dict[prod_attr.id]
+        }
+        data["pc_subs"].append(attr)
 
     return render_template("feedback.html", page=page, subs=data)
 
