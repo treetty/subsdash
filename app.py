@@ -81,11 +81,13 @@ class Answer(db.Model):
 
 
 # Setup Flask-Security
+
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 security = Security(app, user_datastore)
 
 
 # Routers
+
 @app.route("/")
 def index():
     return render_template('index.html')
@@ -120,13 +122,10 @@ def feedback(page=1):
         "brand": orig_attr.brand
     }
 
-    pid_dict = {}
-    prod_ids = []
-    for sub in subs:
-        prod_ids.append(sub.pc_id)
-        pid_dict[sub.pc_id] = sub.id
+    prod_ids = [sub.pc_id for sub in subs]
     prod_attrs = Product.query.filter(Product.id.in_(prod_ids)).all()
 
+    attr_dict = {}
     for prod_attr in prod_attrs:
         attr = {
             "prod_id": prod_attr.id,
@@ -134,8 +133,12 @@ def feedback(page=1):
             "size": prod_attr.size,
             "uom": prod_attr.uom,
             "brand": prod_attr.brand,
-            "pid": pid_dict[prod_attr.id]
         }
+        attr_dict[prod_attr.id] = attr
+
+    for sub in subs:
+        attr = attr_dict[sub.pc_id]
+        attr["pid"] = sub.id
         data["pc_subs"].append(attr)
 
     return render_template("feedback.html", page=page, subs=data)
